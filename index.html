@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Homeward: plan the first 72 hours after a hospital discharge. Prototype for the KU First 72 Hours challenge.">
+</head>
+<body>
+<title>Homeward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: a calm website (wide sections) that hands off to a phone-width app column. Tokens from the Homeward brand kit. */
+:root {
+  --surface:#FBF7F0; --raised:#FFFFFF; --sage:#E4EFE9; --line:#E2DACB; --line-strong:#8C8576;
+  --ink:#1D2726; --muted:#4C5857; --hearth:#1F5E5B; --on-hearth:#FFFFFF; --hearth-soft:#DCEBE6;
+  --porch:#E9A23B; --on-porch:#1D2726; --porch-soft:#FBEBCF;
+  --done:#2D6E46; --pending:#7A4E00; --pending-soft:#FCEBC9; --help:#A23B22; --help-soft:#F9E0D8;
+  --font-display:"Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r-sm:8px; --r-md:16px; --r-lg:28px; --tap:56px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --surface:#141B1A; --raised:#1C2524; --sage:#1F2E2A; --line:#2E3A38; --line-strong:#6F7D7A;
+  --ink:#F3EFE6; --muted:#B9C3C0; --hearth:#6FC3B5; --on-hearth:#0E1716; --hearth-soft:#1E3B37;
+  --porch:#F0B45A; --porch-soft:#3A2E1A; --done:#7FD19C; --pending:#F2C46B; --pending-soft:#3A2E14; --help:#F29A80; --help-soft:#3D211A;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --surface:#141B1A; --raised:#1C2524; --sage:#1F2E2A; --line:#2E3A38; --line-strong:#6F7D7A;
+  --ink:#F3EFE6; --muted:#B9C3C0; --hearth:#6FC3B5; --on-hearth:#0E1716; --hearth-soft:#1E3B37;
+  --porch:#F0B45A; --porch-soft:#3A2E1A; --done:#7FD19C; --pending:#F2C46B; --pending-soft:#3A2E14; --help:#F29A80; --help-soft:#3D211A;
+  color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: 18px; line-height: 28px; padding: 0 16px 48px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 32px; line-height: 40px; }
+h2 { font-size: 26px; line-height: 34px; }
+h3 { font-size: 22px; line-height: 30px; }
+p { margin: 0; }
+a { color: var(--hearth); text-underline-offset: 3px; }
+.muted { color: var(--muted); }
+.small { font-size: 16px; line-height: 24px; }
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+.site { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 72px; padding-top: 24px; }
+
+/* top bar */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); margin: 0 -16px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.top.app .top-in, .top.app .steps, .top.app .stepname { max-width: 560px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 22px; background: none; border: 0; color: var(--ink); cursor: pointer; padding: 0; min-height: 44px; }
+.brand svg { width: 34px; height: 34px; flex: none; }
+.spacer { flex: 1; }
+.navlinks { display: flex; gap: 4px; flex-wrap: wrap; }
+.navlinks button { font: inherit; font-size: 16px; font-weight: 700; background: none; border: 0; color: var(--ink); padding: 8px 10px; min-height: 44px; cursor: pointer; border-radius: var(--r-sm); }
+.navlinks button:hover { background: var(--hearth-soft); }
+.lang { display: flex; border: 2px solid var(--line-strong); border-radius: 999px; overflow: hidden; }
+.lang button { font: inherit; font-size: 16px; font-weight: 700; background: transparent; color: var(--ink); border: 0; padding: 4px 12px; min-height: 40px; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--hearth); color: var(--on-hearth); }
+.steps { display: flex; gap: 6px; margin: 10px auto 0; }
+.steps span { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.steps span.on { background: var(--hearth); }
+.stepname { margin: 6px auto 0; font-size: 16px; line-height: 22px; color: var(--muted); font-weight: 700; }
+
+/* controls */
+.btn { font: inherit; font-size: 18px; font-weight: 700; min-height: var(--tap); padding: 0 22px; border-radius: var(--r-md); border: 2px solid var(--line-strong); background: var(--raised); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-align: center; text-decoration: none; }
+.btn.primary { background: var(--hearth); border-color: var(--hearth); color: var(--on-hearth); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--hearth); text-decoration: underline; text-underline-offset: 4px; padding: 0 10px; }
+.btn.small { min-height: 48px; font-size: 16px; padding: 0 16px; }
+.btn.block { width: 100%; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible, .navlinks button:focus-visible, .lang button:focus-visible, .brand:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--hearth); outline-offset: 3px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+input[type="text"], input[type="tel"], input[type="date"], input[type="time"], input[type="number"], textarea, select { font: inherit; font-size: 18px; color: var(--ink); background: var(--raised); border: 2px solid var(--line-strong); border-radius: var(--r-sm); min-height: var(--tap); padding: 10px 14px; width: 100%; }
+textarea { min-height: 140px; }
+label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+label.field .hint { font-weight: 400; font-size: 16px; line-height: 22px; color: var(--muted); }
+fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+legend { font-weight: 700; padding: 0; margin-bottom: 8px; }
+.seg { display: flex; flex-wrap: wrap; gap: 10px; }
+.seg label { display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap); padding: 0 18px; border: 2px solid var(--line-strong); border-radius: var(--r-md); cursor: pointer; background: var(--raised); font-weight: 700; }
+.seg input { width: 22px; height: 22px; accent-color: var(--hearth); }
+.seg label:has(input:checked) { border-color: var(--hearth); background: var(--hearth-soft); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 420px) { .row2 { grid-template-columns: 1fr; } }
+
+/* surfaces */
+.screen { display: flex; flex-direction: column; gap: 20px; padding-top: 24px; }
+.card { background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-md); padding: 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sage { background: var(--sage); border-radius: var(--r-md); padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; }
+.why { background: var(--sage); border-radius: var(--r-sm); padding: 12px 16px; }
+.note { background: var(--porch-soft); border-radius: var(--r-sm); padding: 12px 16px; font-size: 16px; line-height: 24px; }
+.bottom { position: sticky; bottom: 0; background: var(--surface); padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); margin: 0 -16px; z-index: 4; }
+.bottom .in { max-width: 560px; margin: 0 auto; display: flex; gap: 12px; }
+.bottom .in .btn { flex: 1; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; line-height: 22px; font-weight: 700; padding: 3px 12px; border-radius: 999px; border: 2px solid transparent; white-space: nowrap; }
+.chip svg { width: 18px; height: 18px; flex: none; }
+.chip.help { border: 2px dashed var(--help); color: var(--help); }
+.chip.pending { background: var(--pending-soft); color: var(--pending); }
+.chip.accepted { background: var(--hearth-soft); border-color: var(--hearth); color: var(--hearth); }
+.chip.done { background: var(--done); color: var(--on-hearth); }
+.tag { display: inline-block; font-size: 14px; line-height: 20px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--pending); background: var(--pending-soft); border-radius: 6px; padding: 1px 8px; }
+.meta { font-size: 16px; line-height: 24px; color: var(--muted); }
+.quote { font-size: 16px; line-height: 24px; color: var(--muted); border-left: 3px solid var(--line-strong); padding-left: 12px; }
+.check { display: flex; gap: 12px; align-items: flex-start; }
+.check input { width: 28px; height: 28px; accent-color: var(--hearth); flex: none; margin-top: 2px; }
+.dayhead { font-size: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.day { display: flex; flex-direction: column; gap: 12px; }
+.opt { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border: 2px solid var(--line-strong); border-radius: var(--r-md); cursor: pointer; background: var(--raised); }
+.opt input { width: 24px; height: 24px; accent-color: var(--hearth); flex: none; margin-top: 3px; }
+.opt:has(input:checked) { border-color: var(--hearth); background: var(--hearth-soft); }
+.opt-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.opt .t { font-weight: 700; }
+.payrow { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.payrow:last-child { border-bottom: 0; }
+.payrow > div:first-child { min-width: 0; }
+.payrow .amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.total { background: var(--porch-soft); border-radius: var(--r-sm); padding: 14px 16px; display: flex; justify-content: space-between; font-size: 22px; line-height: 30px; font-weight: 700; }
+.bar { height: 12px; background: var(--line); border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--hearth); border-radius: 6px; }
+.event { border: 2px solid var(--porch); background: var(--porch-soft); border-radius: var(--r-md); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.list { display: flex; flex-direction: column; gap: 10px; }
+.item { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.item > div { min-width: 0; }
+.linkbox { font-size: 15px; line-height: 22px; word-break: break-all; background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--r-sm); padding: 10px 12px; user-select: all; }
+.history { margin: 0; padding-left: 20px; font-size: 16px; line-height: 24px; color: var(--muted); }
+.spinner { width: 44px; height: 44px; border-radius: 50%; border: 5px solid var(--hearth-soft); border-top-color: var(--hearth); }
+@media (prefers-reduced-motion: no-preference) { .spinner { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } .screen { animation: in .25s ease-out; } @keyframes in { from { opacity: .4; transform: translateY(6px);} to { opacity: 1; transform: none; } } }
+.toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 12px 20px; border-radius: var(--r-md); font-weight: 700; max-width: calc(100% - 32px); z-index: 20; }
+details summary { cursor: pointer; font-weight: 700; color: var(--hearth); min-height: 44px; display: flex; align-items: center; }
+.res { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.res .phone { font-weight: 700; font-variant-numeric: tabular-nums; user-select: all; }
+
+/* website */
+.hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; padding-top: 24px; }
+@media (max-width: 860px) { .hero { grid-template-columns: 1fr; gap: 32px; } }
+.hero h1 { font-size: clamp(40px, 6vw, 64px); line-height: 1.05; }
+.hero .lead { font-size: 22px; line-height: 34px; color: var(--muted); max-width: 32em; }
+.hero .ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.eyebrow { font-size: 16px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hearth); }
+.phone { background: var(--raised); border: 1px solid var(--line); border-radius: 32px; padding: 20px; display: flex; flex-direction: column; gap: 12px; max-width: 420px; justify-self: center; width: 100%; position: relative; }
+.phone::before { content: ""; position: absolute; inset: -18px -18px auto auto; width: 120px; height: 160px; background: var(--porch); border-radius: 60px 60px 0 0; z-index: -1; }
+.phone::after { content: ""; position: absolute; inset: auto auto -18px -18px; width: 140px; height: 140px; background: var(--sage); border-radius: 50%; z-index: -1; }
+.mini { border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; background: var(--raised); }
+.mini h3 { font-size: 19px; line-height: 26px; }
+.section { display: flex; flex-direction: column; gap: 28px; }
+.section > h2 { font-size: clamp(30px, 4vw, 40px); line-height: 1.15; max-width: 20em; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.step { display: flex; flex-direction: column; gap: 10px; padding: 24px; background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-md); }
+.step .n { font-family: var(--font-display); font-size: 40px; line-height: 1; color: var(--hearth); }
+.band { background: var(--hearth); color: var(--on-hearth); border-radius: var(--r-lg); padding: 40px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.band h2 { color: var(--on-hearth); font-size: clamp(28px, 4vw, 38px); line-height: 1.15; }
+.band p { color: var(--on-hearth); }
+@media (max-width: 760px) { .band { grid-template-columns: 1fr; padding: 28px 20px; } }
+.ladder { display: flex; flex-direction: column; gap: 10px; }
+.ladder .chip { align-self: flex-start; }
+.ladder .chip.help { color: var(--on-hearth); border-color: var(--on-hearth); }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+.panel { padding: 28px; border-radius: var(--r-md); background: var(--raised); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px; }
+.panel ul { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.cta-end { text-align: center; display: flex; flex-direction: column; gap: 18px; align-items: center; padding: 48px 20px; background: var(--sage); border-radius: var(--r-lg); }
+footer { font-size: 15px; line-height: 22px; color: var(--muted); text-align: center; max-width: 720px; margin: 24px auto 0; }
+</style>
+
+<header class="top" id="top"></header>
+<main id="app"></main>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+/* ===== Constants ===== */
+const SHARE_URL = "https://claude.ai/artifact/FUpbUENTv3PDSBpuLQZ5sR";
+const BUDGET = 50; // simulated hospital support budget (pilot proposal), dollars
+const MARK = '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1F5E5B"/><path d="M14 31 L32 16 L50 31" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 29 V48 H44 V29" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 48 V40 a5 5 0 0 1 10 0 V48 Z" fill="#E9A23B"/></svg>';
+const IC = {
+  help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+};
+
+/* Verified Lawrence / Douglas County resources. Checked Oct 9, 2026. Availability and prices are not confirmed: always call. */
+const RESOURCES = [
+  { id: 'mow', kind: 'meals', name: 'Midland Care Meals on Wheels (Douglas County)', phone: '785-430-2186',
+    en: 'Home-delivered meals for people 60+ who are homebound or isolated, and for caregivers. Call to check eligibility, cost and start date.',
+    es: 'Comidas a domicilio para personas de 60+ que no pueden salir de casa o están solas, y para cuidadores. Llame para confirmar requisitos, costo y fecha de inicio.',
+    cost: { en: 'Cost not listed. Ask when you call.', es: 'Costo no publicado. Pregunte al llamar.' }, src: 'https://lplks.org/content/midland-meals-on-wheels/' },
+  { id: 'justfood', kind: 'food', name: 'Just Food pantry', phone: '',
+    en: 'Free food pantry at 1000 E. 11th St., Lawrence. Tue and Thu 9 am to 6 pm; Wed and Fri 9 am to 3 pm (hours as of Oct 2025). Someone must pick it up.',
+    es: 'Despensa de comida gratis en 1000 E. 11th St., Lawrence. Mar y jue 9 am a 6 pm; mié y vie 9 am a 3 pm (horario a oct. 2025). Alguien debe recogerla.',
+    cost: { en: 'Free', es: 'Gratis' }, src: 'https://lawrencekstimes.com/resources/food-pantries/' },
+  { id: 'seniorwheels', kind: 'ride', name: 'Senior Wheels (Senior Resource Center)', phone: '785-727-7876',
+    en: 'Door-to-door rides for Douglas County seniors. Mon to Fri, 7 am to 3:30 pm. Book ahead; no same-day rides. New riders fill out a form.',
+    es: 'Viajes puerta a puerta para mayores del condado de Douglas. Lun a vie, 7 am a 3:30 pm. Reserve con anticipación; no hay viajes el mismo día.',
+    cost: { en: '$4 one way in town ($8 round trip)', es: '$4 de ida en la ciudad ($8 ida y vuelta)' }, src: 'https://www.dgcoks.gov/senior-resource-center/senior-wheels-and-transportation' },
+  { id: 'independence', kind: 'ride', name: 'Independence, Inc.', phone: '785-843-5576',
+    en: 'Transportation and other services for people with disabilities in Lawrence. Call Mon to Fri, 8:30 am to 5 pm.',
+    es: 'Transporte y otros servicios para personas con discapacidad en Lawrence. Llame lun a vie, 8:30 am a 5 pm.',
+    cost: { en: 'Ask when you call.', es: 'Pregunte al llamar.' }, src: 'https://www.dgcoks.gov/senior-resource-center/senior-wheels-and-transportation' },
+  { id: 'tlift', kind: 'ride', name: 'T Lift paratransit (Lawrence Transit)', phone: '785-312-7054',
+    en: 'Door-to-door shared rides for people whose disability keeps them from using the bus. Requires ADA certification; apply first. Spanish application available.',
+    es: 'Viajes compartidos puerta a puerta para personas cuya discapacidad no les permite usar el autobús. Requiere certificación ADA; aplique primero. Solicitud en español disponible.',
+    cost: { en: 'Fare not listed. Ask when you call.', es: 'Tarifa no publicada. Pregunte al llamar.' }, src: 'https://lawrencetransit.org/ada-services/' },
+  { id: 'adrc', kind: 'help', name: 'Kansas Aging and Disability Resource Center', phone: '855-200-2372',
+    en: 'Free help finding in-home services, rides and home-delivered meals, and connecting to a local options counselor. Mon to Fri, 8 am to 5 pm.',
+    es: 'Ayuda gratis para encontrar servicios en casa, transporte y comidas a domicilio, y un consejero local. Lun a vie, 8 am a 5 pm.',
+    cost: { en: 'Free call', es: 'Llamada gratis' }, src: 'https://kdads.ks.gov/services-programs/aging-and-disability-resource-center' },
+  { id: '211', kind: 'help', name: '211 Kansas', phone: '211',
+    en: 'Free help finding local services. Call 211 or text your ZIP code to 898-211, Mon to Fri, 7 am to 7 pm. Translation available on calls.',
+    es: 'Ayuda gratis para encontrar servicios locales. Llame al 211 o envíe su código postal por texto al 898-211, lun a vie, 7 am a 7 pm. Hay traducción en llamadas.',
+    cost: { en: 'Free', es: 'Gratis' }, src: 'https://www.unitedwayplains.org/211/' },
+  { id: 'medicare', kind: 'pay', name: 'Senior Resource Center: Medicare counseling', phone: '785-842-0543',
+    en: 'Free, unbiased Medicare counseling. Useful to ask what a plan covers. 745 Vermont St., Mon to Fri, 8:30 am to 4:30 pm.',
+    es: 'Asesoría gratis e imparcial sobre Medicare. Útil para saber qué cubre un plan. 745 Vermont St., lun a vie, 8:30 am a 4:30 pm.',
+    cost: { en: 'Free', es: 'Gratis' }, src: 'https://www.dgcoks.gov/senior-resource-center' }
+];
+
+/* ===== Strings (English and Spanish) ===== */
+const T = {
+ en: {
+  navHow: 'How it works', navFamilies: 'For families', navHospitals: 'For hospitals', navResources: 'Lawrence help', start: 'Start a plan', tryIt: 'Try with a sample', cont: 'Continue my plan',
+  heroEye: 'The first 72 hours after the hospital', heroH: 'Help that actually makes it home.', heroP: 'Homeward turns the discharge paper and the help you already have into one simple plan. It finds what is still missing, asks the right people, and checks that each thing really happened.',
+  heroNote: 'Free for families. English and Spanish. Works on any phone, no app to install.',
+  howH: 'From "they’re sending her home today" to a plan that holds, in about 10 minutes.',
+  h1t: 'Tell us what’s going on', h1p: 'A few plain questions, plus a photo of the discharge paper. We pull out the practical things you’ll need to arrange.',
+  h2t: 'See what’s still missing', h2p: 'Meals that start tomorrow leave tonight uncovered. A delivery needs someone to carry it in. We spot gaps like these.',
+  h3t: 'Cover it, see who pays', h3p: 'Ask family with one link, call a local program, or pick paid help. Every item shows who pays, how much, and why.',
+  h4t: 'Know it really happened', h4p: 'Each task has an owner and a status. We ask: did it arrive, and could they use it? If not, it stays open.',
+  bandH: 'Arranged isn’t the same as done.', bandP: 'Most tools stop when help is booked. Homeward keeps going until the person at home can actually use it. A task only counts as covered once someone says yes, and only counts as done once it worked.',
+  famH: 'For families', famL: ['Free to use, in English or Spanish', 'Big text and big buttons, for ages 16 to 80', 'Ask relatives and friends with one link', 'Local Lawrence programs, with phone numbers', 'Nothing is bought without your clear yes'],
+  hosH: 'For hospitals and health plans', hosL: ['Starts from the discharge paper you already give', 'No new work for nurses or case managers', 'Shows which needs were accepted and confirmed', 'Proposed pilot: a small support budget for gaps', 'Built for the 30 days hospitals are accountable for'],
+  hosNote: 'Pilot proposal. No hospital partnership exists yet.',
+  ageH: 'Made for every age and every screen', ageP: 'Large type designed for low vision, 56-pixel buttons, one step at a time, plain words, and statuses you can read without seeing color.',
+  endH: 'Coming home soon?', endP: 'Start a plan now. It takes about 10 minutes.',
+  footer: 'Homeward is a prototype for the KU “First 72 Hours” Digital Health Venture Challenge. It plans practical, non-clinical help only. For medical questions, call the care team. In an emergency, call 911. Don’t enter details you wouldn’t share; this prototype is not HIPAA-compliant.',
+  stepNeed: 'Need', stepOffer: 'Offer', stepPay: 'Payment', stepDone: 'Fulfillment', stepOf: 'Step {n} of 4',
+  aboutH: 'Who is coming home?', aboutP: 'This helps us plan around real life. Use a first name only.',
+  pName: 'Their first name', pRel: 'You are their…', pRelPh: 'daughter, son, friend…', pYou: 'Your first name', pDate: 'Discharge day', pTime: 'About what time?', pCity: 'Town', pLang: 'Language they prefer',
+  qAlone: 'Will they be alone at home?', qCarry: 'Can they carry a bag of groceries right now?', qCook: 'Can they stand to cook a simple meal?', qDrive: 'Can they drive?', qFridge: 'Is there room in the fridge for a few days of meals?', qBudget: 'The most you want to spend yourself, if needed', yes: 'Yes', no: 'No', notSure: 'Not sure',
+  next: 'Next', back: 'Back',
+  paperH: 'Add the discharge paper', paperP: 'Take a photo, or paste the words. We only look for practical things to arrange. Medical questions go to the care team.',
+  photo: 'Take or choose a photo', paste: 'Or paste the text', skip: 'I don’t have it', read: 'Read the paper', reading: 'Reading the paper…',
+  foundH: 'What we found', foundP: 'Uncheck anything that’s wrong. You can add your own.', addTask: 'Add something we missed', add: 'Add',
+  helpH: 'What help do you already have?', helpP: 'We keep everything you already set up. We only fill the gaps.',
+  arrH: 'Already arranged', arrPh: 'e.g. Meal delivery starts tomorrow, 2 to 4 pm', arrNone: 'Nothing yet. That’s okay.',
+  helpersH: 'People who can help', helpersP: 'Family, friends, neighbors. Say when they’re free.', hName: 'Name', hRel: 'Who they are', hWhen: 'When they’re free', hPhone: 'Phone (optional)', addHelper: 'Add this person', youRow: 'You',
+  youWhen: 'When are you free?', youWhenPh: 'e.g. weekdays after 5 pm; I work nights',
+  build: 'Make my plan', building: 'Making the plan…', buildingP: 'We’re checking the paper and your answers against what’s already arranged.',
+  gapsH: '{n} still need someone.', gapsH0: 'Everything already has someone.', gaps1: 'One thing', gaps2: 'Two things', gaps3: 'Three things', gapsN: '{n} things',
+  inPlace: 'Already in place', coverThis: 'Cover this', handled: 'Already handled', edit: 'Edit', undo: 'Undo', save: 'Save', cancel: 'Cancel', handledH: 'You said these are handled', noOne: 'No one yet', coverAll: 'Cover these',
+  aiOff: 'Planned with simple rules because the AI step isn’t available here.',
+  chooseH: 'Choose your support.', chooseP: 'People you know and free programs come first. Asking someone isn’t covered until they say yes.',
+  optAsk: 'Ask {name}', optAskFit: 'Free. {name} said: “{when}”. Waits for their yes.', optSelf: 'I’ll do it myself', optSelfFit: 'You said: “{when}”.', optPaid: 'Paid help', optPaidFit: 'A home-care agency or helper you choose. Enter the price you were quoted.', optCall: 'Call {name}', quote: 'Price you were quoted ($)',
+  seePay: 'See who pays',
+  payH: 'Who covers this', youPay: 'You pay', coord: 'Homeward coordination', coordP: 'Paid by the hospital or health plan (proposed). Never by you, and kept separate from the cost of help.', zeroYou: '$0 to you',
+  payerFamily: '{name} (family or friend)', payerFamilyWhy: 'Free. Counts once they say yes.', payerSelf: 'You', payerSelfWhy: 'You’re doing it yourself.', payerRes: 'Community program', payerResWhy: 'Free or low cost. Confirm when you call.', payerBudget: 'Hospital support budget (simulated)', payerBudgetWhy: 'Proposed pilot: a small hospital budget for gaps like this.', payerYou: 'You', payerYouWhy: 'No budget left, so you decide.', payerMix: 'Budget {a} + you {b}',
+  budgetToggle: 'Use the hospital support budget (simulated pilot, ${b})', overLimit: 'This is more than the {lim} you set. Pick a free option or change your limit.',
+  simNote: 'Simulated. No card is charged. Community program prices are as published and may change.',
+  confirm: 'Confirm the plan', payNow: 'Pay {x} (simulated)',
+  planH: '{name}’s first 72 hours', coveredOf: '{c} of {t} covered', completed: '{d} completed', coveredExp: 'Covered means someone said yes. Completed means it arrived and {name} could use it.',
+  shareH: 'Send the helper link', shareP: 'Send this to the people you asked. They tap it, see their task, and say yes or no.', copy: 'Copy', copied: 'Copied', msgCopy: 'Copy a message to send', shareNote: 'For now, helpers need access to this page on Claude (share it with them). If they can’t open it, they can just tell you, and you mark it below.', noDb: 'Live helper links aren’t available in this view. Ask helpers by phone and mark their answer here.',
+  saidYes: 'They told me yes', iCalled: 'I called; they said yes', checkIt: 'Check on this', arrivedQ: 'Did it arrive or happen?', usableQ: 'Could {name} use it?', yesArrived: 'Yes, it arrived', noArrived: 'No', yesUse: 'Yes', noUse: 'No, they couldn’t',
+  reopenNote: 'It’s still open. A booking isn’t the same as a met need.', nextH: 'What should we do?', askAgain: 'Ask {name} to fix it', tryOther: 'Choose another option', ideas: 'Get ideas', ideasLoading: 'Thinking…',
+  helperDone: '{name} says it’s done. Please check.', declined: '{name} can’t do this one. Pick another option.',
+  history: 'History', newPlan: 'Start a new plan', resH: 'Help in Lawrence and Douglas County', resP: 'Real local programs, checked Oct 9, 2026. Hours, rules and prices change, so always call first.', source: 'Source', call: 'Call', checked: 'Checked Oct 9, 2026 · call to confirm',
+  hlpHi: 'Hi {name}, {cg} asked for your help.', hlpWho: 'Which one are you?', hlpNone: 'No tasks for you right now. Thank you!', hlpYes: 'Yes, I’ll do it', hlpNo: 'I can’t', hlpDone: 'Done', hlpSaved: 'Saved. {cg} will see it.', hlpFail: 'Couldn’t save here. Please text {cg} your answer instead.', hlpNotFound: 'We couldn’t find this plan. Ask for a new link.',
+  hlpAbout: 'Homeward plans practical help for someone just home from the hospital.', loading: 'Loading…',
+  sampleTag: 'Sample', sampleBanner: 'You’re trying a sample situation. Change anything you like.',
+  status_needs: 'Needs arranging', status_waiting: 'Awaiting acceptance', status_accepted: 'Accepted', status_done: 'Completed', status_helpme: 'Needs help',
+  dayLabel: 'Day {n}', today: 'Today', noTasks: 'No tasks yet.', privacy: 'Use first names only. This prototype is not HIPAA-compliant.',
+  medical: 'For medical questions, call the care team on the paper. In an emergency, call 911.',
+  errAI: 'The AI step didn’t work just now. We used simple rules instead; you can edit anything.'
+ },
+ es: {
+  navHow: 'Cómo funciona', navFamilies: 'Para familias', navHospitals: 'Para hospitales', navResources: 'Ayuda en Lawrence', start: 'Empezar un plan', tryIt: 'Probar con un ejemplo', cont: 'Seguir con mi plan',
+  heroEye: 'Las primeras 72 horas después del hospital', heroH: 'Ayuda que de verdad llega a casa.', heroP: 'Homeward convierte el papel del alta y la ayuda que ya tiene en un plan sencillo. Encuentra lo que falta, le pide ayuda a las personas indicadas y confirma que cada cosa de verdad pasó.',
+  heroNote: 'Gratis para familias. En inglés y español. Funciona en cualquier teléfono, sin instalar nada.',
+  howH: 'De “hoy le dan el alta” a un plan que funciona, en unos 10 minutos.',
+  h1t: 'Cuéntenos qué pasa', h1p: 'Unas preguntas sencillas y una foto del papel del alta. Sacamos las cosas prácticas que tendrá que organizar.',
+  h2t: 'Vea lo que todavía falta', h2p: 'Si las comidas empiezan mañana, hoy en la noche queda sin cubrir. Una entrega necesita a alguien que la meta a la casa. Encontramos esos huecos.',
+  h3t: 'Cúbralo y vea quién paga', h3p: 'Pídale ayuda a su familia con un enlace, llame a un programa local o elija ayuda pagada. Cada cosa muestra quién paga, cuánto y por qué.',
+  h4t: 'Sepa que de verdad pasó', h4p: 'Cada tarea tiene un responsable y un estado. Preguntamos: ¿llegó y la pudo usar? Si no, sigue abierta.',
+  bandH: 'Organizado no es lo mismo que resuelto.', bandP: 'La mayoría de las herramientas se detienen cuando la ayuda está reservada. Homeward sigue hasta que la persona en casa de verdad la puede usar. Una tarea cuenta como cubierta cuando alguien dice que sí, y como hecha cuando funcionó.',
+  famH: 'Para familias', famL: ['Gratis, en inglés o español', 'Letra y botones grandes, para edades de 16 a 80', 'Pida ayuda a familiares y amigos con un enlace', 'Programas locales de Lawrence, con teléfonos', 'No se compra nada sin su “sí” claro'],
+  hosH: 'Para hospitales y planes de salud', hosL: ['Empieza con el papel del alta que ya entregan', 'Sin trabajo extra para enfermeras o trabajadores sociales', 'Muestra qué necesidades se aceptaron y confirmaron', 'Piloto propuesto: un pequeño presupuesto para los huecos', 'Hecho para los 30 días de los que el hospital responde'],
+  hosNote: 'Propuesta de piloto. Todavía no hay acuerdo con ningún hospital.',
+  ageH: 'Hecho para todas las edades y pantallas', ageP: 'Letra grande diseñada para baja visión, botones de 56 píxeles, un paso a la vez, palabras sencillas y estados que se leen sin ver colores.',
+  endH: '¿Viene pronto a casa?', endP: 'Empiece un plan ahora. Toma unos 10 minutos.',
+  footer: 'Homeward es un prototipo para el reto “First 72 Hours” de KU. Solo planea ayuda práctica, no médica. Para preguntas médicas, llame al equipo de salud. En una emergencia, llame al 911. No escriba datos que no compartiría; este prototipo no cumple con HIPAA.',
+  stepNeed: 'Necesidad', stepOffer: 'Opciones', stepPay: 'Pago', stepDone: 'Cumplimiento', stepOf: 'Paso {n} de 4',
+  aboutH: '¿Quién vuelve a casa?', aboutP: 'Esto nos ayuda a planear según la vida real. Use solo el primer nombre.',
+  pName: 'Su primer nombre', pRel: 'Usted es su…', pRelPh: 'hija, hijo, amigo…', pYou: 'Su primer nombre (el suyo)', pDate: 'Día del alta', pTime: '¿A qué hora, más o menos?', pCity: 'Ciudad', pLang: 'Idioma que prefiere',
+  qAlone: '¿Va a estar solo en casa?', qCarry: '¿Puede cargar una bolsa del súper ahora?', qCook: '¿Puede estar de pie para cocinar algo sencillo?', qDrive: '¿Puede manejar?', qFridge: '¿Hay espacio en el refri para comidas de unos días?', qBudget: 'Lo máximo que quiere pagar usted, si hace falta', yes: 'Sí', no: 'No', notSure: 'No sé',
+  next: 'Siguiente', back: 'Atrás',
+  paperH: 'Agregue el papel del alta', paperP: 'Tome una foto o pegue el texto. Solo buscamos cosas prácticas que organizar. Las preguntas médicas son para el equipo de salud.',
+  photo: 'Tomar o elegir una foto', paste: 'O pegue el texto', skip: 'No lo tengo', read: 'Leer el papel', reading: 'Leyendo el papel…',
+  foundH: 'Lo que encontramos', foundP: 'Quite lo que esté mal. Puede agregar lo suyo.', addTask: 'Agregar algo que faltó', add: 'Agregar',
+  helpH: '¿Qué ayuda ya tiene?', helpP: 'Guardamos todo lo que ya organizó. Solo llenamos los huecos.',
+  arrH: 'Ya organizado', arrPh: 'p. ej. La entrega de comida empieza mañana, de 2 a 4 pm', arrNone: 'Nada todavía. Está bien.',
+  helpersH: 'Personas que pueden ayudar', helpersP: 'Familia, amigos, vecinos. Diga cuándo pueden.', hName: 'Nombre', hRel: 'Quién es', hWhen: 'Cuándo puede', hPhone: 'Teléfono (opcional)', addHelper: 'Agregar a esta persona', youRow: 'Usted',
+  youWhen: '¿Cuándo puede usted?', youWhenPh: 'p. ej. entre semana después de las 5 pm; trabajo de noche',
+  build: 'Hacer mi plan', building: 'Haciendo el plan…', buildingP: 'Estamos revisando el papel y sus respuestas contra lo que ya está organizado.',
+  gapsH: '{n} todavía necesitan a alguien.', gapsH0: 'Todo ya tiene a alguien.', gaps1: 'Una cosa', gaps2: 'Dos cosas', gaps3: 'Tres cosas', gapsN: '{n} cosas',
+  inPlace: 'Ya está listo', coverThis: 'Cubrir esto', handled: 'Ya está resuelto', edit: 'Editar', undo: 'Deshacer', save: 'Guardar', cancel: 'Cancelar', handledH: 'Usted dijo que esto ya está resuelto', noOne: 'Nadie todavía', coverAll: 'Cubrir esto',
+  aiOff: 'Planeado con reglas sencillas porque el paso de IA no está disponible aquí.',
+  chooseH: 'Elija su apoyo.', chooseP: 'Primero las personas que conoce y los programas gratis. Pedirle a alguien no cuenta como cubierto hasta que diga que sí.',
+  optAsk: 'Pedirle a {name}', optAskFit: 'Gratis. {name} dijo: “{when}”. Espera su sí.', optSelf: 'Lo hago yo', optSelfFit: 'Usted dijo: “{when}”.', optPaid: 'Ayuda pagada', optPaidFit: 'Una agencia o ayudante que usted elija. Escriba el precio que le dieron.', optCall: 'Llamar a {name}', quote: 'Precio que le dieron ($)',
+  seePay: 'Ver quién paga',
+  payH: 'Quién cubre esto', youPay: 'Usted paga', coord: 'Coordinación de Homeward', coordP: 'La paga el hospital o el plan de salud (propuesta). Nunca usted, y aparte del costo de la ayuda.', zeroYou: '$0 para usted',
+  payerFamily: '{name} (familia o amigo)', payerFamilyWhy: 'Gratis. Cuenta cuando diga que sí.', payerSelf: 'Usted', payerSelfWhy: 'Lo hace usted.', payerRes: 'Programa comunitario', payerResWhy: 'Gratis o de bajo costo. Confirme al llamar.', payerBudget: 'Presupuesto de apoyo del hospital (simulado)', payerBudgetWhy: 'Piloto propuesto: un pequeño presupuesto del hospital para huecos como este.', payerYou: 'Usted', payerYouWhy: 'No queda presupuesto; usted decide.', payerMix: 'Presupuesto {a} + usted {b}',
+  budgetToggle: 'Usar el presupuesto de apoyo del hospital (piloto simulado, ${b})', overLimit: 'Es más que los {lim} que puso. Elija una opción gratis o cambie su límite.',
+  simNote: 'Simulado. No se cobra ninguna tarjeta. Los precios de programas comunitarios son los publicados y pueden cambiar.',
+  confirm: 'Confirmar el plan', payNow: 'Pagar {x} (simulado)',
+  planH: 'Las primeras 72 horas de {name}', coveredOf: '{c} de {t} cubiertas', completed: '{d} completadas', coveredExp: 'Cubierta significa que alguien dijo que sí. Completada significa que llegó y {name} la pudo usar.',
+  shareH: 'Mande el enlace para ayudantes', shareP: 'Mándelo a las personas a quienes pidió ayuda. Lo abren, ven su tarea y dicen sí o no.', copy: 'Copiar', copied: 'Copiado', msgCopy: 'Copiar un mensaje para mandar', shareNote: 'Por ahora, los ayudantes necesitan acceso a esta página en Claude (compártala con ellos). Si no la pueden abrir, que le avisen y usted lo marca abajo.', noDb: 'Los enlaces en vivo no están disponibles aquí. Pregunte por teléfono y marque la respuesta aquí.',
+  saidYes: 'Me dijo que sí', iCalled: 'Llamé y dijeron que sí', checkIt: 'Revisar esto', arrivedQ: '¿Llegó o pasó?', usableQ: '¿{name} lo pudo usar?', yesArrived: 'Sí, llegó', noArrived: 'No', yesUse: 'Sí', noUse: 'No, no pudo',
+  reopenNote: 'Sigue abierto. Reservar no es lo mismo que resolver.', nextH: '¿Qué hacemos?', askAgain: 'Pedirle a {name} que lo arregle', tryOther: 'Elegir otra opción', ideas: 'Ver ideas', ideasLoading: 'Pensando…',
+  helperDone: '{name} dice que ya está. Por favor revise.', declined: '{name} no puede con esta. Elija otra opción.',
+  history: 'Historial', newPlan: 'Empezar un plan nuevo', resH: 'Ayuda en Lawrence y el condado de Douglas', resP: 'Programas locales reales, revisados el 9 de oct. de 2026. Los horarios, reglas y precios cambian; siempre llame primero.', source: 'Fuente', call: 'Llamar', checked: 'Revisado el 9 de oct. de 2026 · llame para confirmar',
+  hlpHi: 'Hola {name}, {cg} le pidió ayuda.', hlpWho: '¿Quién es usted?', hlpNone: 'No tiene tareas por ahora. ¡Gracias!', hlpYes: 'Sí, yo lo hago', hlpNo: 'No puedo', hlpDone: 'Listo', hlpSaved: 'Guardado. {cg} lo verá.', hlpFail: 'No se pudo guardar aquí. Mándele un mensaje a {cg} con su respuesta.', hlpNotFound: 'No encontramos este plan. Pida un enlace nuevo.',
+  hlpAbout: 'Homeward planea ayuda práctica para alguien que acaba de salir del hospital.', loading: 'Cargando…',
+  sampleTag: 'Ejemplo', sampleBanner: 'Está probando una situación de ejemplo. Cambie lo que quiera.',
+  status_needs: 'Falta organizar', status_waiting: 'Esperando respuesta', status_accepted: 'Aceptada', status_done: 'Completada', status_helpme: 'Necesita ayuda',
+  dayLabel: 'Día {n}', today: 'Hoy', noTasks: 'Sin tareas todavía.', privacy: 'Use solo primeros nombres. Este prototipo no cumple con HIPAA.',
+  medical: 'Para preguntas médicas, llame al equipo de salud del papel. En una emergencia, llame al 911.',
+  errAI: 'El paso de IA no funcionó ahora. Usamos reglas sencillas; puede editar todo.'
+ }
+};
+function t(k, vars) { let s = (T[S.lang] && T[S.lang][k]) ?? T.en[k] ?? k; if (vars && typeof s === 'string') for (const [a, b] of Object.entries(vars)) s = s.split('{' + a + '}').join(b); return s; }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function money(n) { return '$' + (Math.round(Number(n) * 100) / 100); }
+function uid(p) { return p + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function nowLabel() { return new Date().toLocaleString(S.lang === 'es' ? 'es' : 'en', { weekday: 'short', hour: 'numeric', minute: '2-digit' }); }
+
+/* ===== Sample situation (fictional) ===== */
+const SAMPLE_PAPER = `SAMPLE DISCHARGE SUMMARY (fictional)
+Patient: Rosa M., 71. Discharged today at 3:00 pm after hip-fracture surgery.
+Use the walker at all times. Do not lift or carry anything heavier than a gallon of milk for 4 weeks.
+Avoid standing for long periods for 2 weeks.
+Follow-up: orthopedic clinic, Thursday, 10:30 am. Patient may not drive.
+Preferred language: Spanish.
+Questions about recovery: call the clinic at (785) 555-0142.`;
+function sampleDraft() {
+  const d = new Date(); const iso = d.toISOString().slice(0, 10);
+  return {
+    sample: true, name: 'Rosa', rel: 'son', you: 'Daniel', date: iso, time: '15:00', city: 'Lawrence, KS', plang: 'Spanish',
+    alone: 'yes', carry: 'no', cook: 'no', drive: 'no', fridge: 'yes', limit: '50',
+    paperText: SAMPLE_PAPER, tasks: [], arranged: ['Meal delivery service starts tomorrow, 2 to 4 pm delivery window', 'Daniel drives her to the follow-up on Thursday'],
+    youWhen: 'Free 3 to 8 pm. I work nights and sleep 8 am to 2 pm.',
+    helpers: [{ id: 'h1', name: 'Marco', rel: 'cousin, lives nearby', when: 'Evenings and weekends', phone: '' }]
+  };
+}
+function blankDraft() {
+  const iso = new Date().toISOString().slice(0, 10);
+  return { sample: false, name: '', rel: '', you: '', date: iso, time: '', city: 'Lawrence, KS', plang: 'English', alone: '', carry: '', cook: '', drive: '', fridge: '', limit: '50', paperText: '', tasks: [], arranged: [], youWhen: '', helpers: [] };
+}
+
+/* ===== State ===== */
+let S = { view: 'home', lang: 'en', draft: blankDraft(), pid: null, plan: null, gaps: [], tasks: [], aiUsed: null, busy: false, helperPid: null, helperMe: null, helperPlan: null, helperTasks: [], useBudget: true, editing: null };
+try { const l = localStorage.getItem('hw-lang'); if (l) S.lang = l; const p = localStorage.getItem('hw-current'); if (p) S.savedPid = p; } catch (e) {}
+
+/* ===== Platform: db + sample (both optional) ===== */
+let DB = null, SAMPLE = null, unsubTasks = null, unsubHelper = [];
+const ready = (async () => {
+  if (!window.claude || !window.claude.use) return;
+  try { DB = await window.claude.use('db'); } catch (e) { DB = null; }
+  try { SAMPLE = await window.claude.use('sample'); } catch (e) { SAMPLE = null; }
+})();
+const writeQ = {};
+function dbWrite(path, data) {
+  if (!DB) return Promise.resolve(false);
+  writeQ[path] = (writeQ[path] || Promise.resolve()).then(() => DB.doc(path).set(JSON.parse(JSON.stringify(data)))).then(() => true, e => { console.warn('save failed', path, e && e.code); return false; });
+  return writeQ[path];
+}
+function localSave() { try { if (S.pid) localStorage.setItem('hw-plan-' + S.pid, JSON.stringify({ plan: S.plan, tasks: S.tasks })); localStorage.setItem('hw-current', S.pid || ''); localStorage.setItem('hw-lang', S.lang); } catch (e) {} }
+function savePlan() { localSave(); return dbWrite('plans/' + S.pid, S.plan); }
+function saveTask(task) { task.updatedAt = Date.now(); localSave(); return dbWrite('plans/' + S.pid + '/tasks/' + task.id, task); }
+function subscribeTasks() {
+  if (!DB || !S.pid || unsubTasks) return;
+  unsubTasks = DB.collection('plans/' + S.pid + '/tasks').onSnapshot(snap => {
+    let changed = false;
+    snap.docs.forEach(d => { const remote = d.data(); const i = S.tasks.findIndex(x => x.id === d.id);
+      if (i < 0) { S.tasks.push(structuredClone(remote)); changed = true; }
+      else if ((remote.updatedAt || 0) > (S.tasks[i].updatedAt || 0)) { S.tasks[i] = structuredClone(remote); changed = true; } });
+    if (changed && S.view === 'plan') { localSave(); render(); }
+  }, () => {});
+}
+
+/* ===== Status chips ===== */
+const ST = { needs: ['help', 'help'], waiting: ['pending', 'clock'], accepted: ['accepted', 'hand'], done: ['done', 'check'], helpme: ['help', 'help'] };
+function chip(st) { const [c, i] = ST[st]; return `<span class="chip ${c}">${IC[i]} ${t('status_' + st)}</span>`; }
+
+/* ===== Day helpers ===== */
+function dayDate(n) { const base = S.view === 'helper' && S.helperPlan ? S.helperPlan.date : S.plan ? S.plan.date : S.draft.date; const d = new Date((base || new Date().toISOString().slice(0, 10)) + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toLocaleDateString(S.lang === 'es' ? 'es' : 'en', { weekday: 'short', month: 'short', day: 'numeric' }); }
+function dayHead(n) { return `${t('dayLabel', { n: n + 1 })} · ${dayDate(n)}`; }
+
+/* ===== AI: read the paper ===== */
+async function aiReadPaper(text, file) {
+  if (!SAMPLE) throw { code: 'unavailable' };
+  const lang = S.lang === 'es' ? 'Spanish' : 'English';
+  const prompt = `You help a family caregiver plan practical, non-clinical support for the first 72 hours after a hospital discharge.
+Read the discharge paper ${file ? 'in the attached photo' : 'below'}. List the practical things the family will need to arrange at home: help moving around, carrying, meals, rides to appointments, pickups, language needs, who to call. Do not give medical advice, do not add anything that is not written, and skip purely clinical instructions unless they create a practical need (for example "do not lift" means someone must carry things).
+Reply with only JSON: {"tasks":[{"text":"plain words, at most 12, in ${lang}","source":"the exact sentence from the paper"}]}. At most 8 tasks.
+${file ? '' : 'PAPER:\n' + text.slice(0, 12000)}`;
+  const opts = { modelTier: 'default' }; if (file) opts.images = [file];
+  const out = await SAMPLE.json(prompt, opts);
+  if (!out || !Array.isArray(out.tasks)) throw { code: 'invalid_json' };
+  return out.tasks.filter(x => x && x.text).slice(0, 8).map(x => ({ id: uid('t'), text: String(x.text), source: String(x.source || ''), on: true }));
+}
+function rulesReadPaper(text) {
+  const lines = text.split(/\n|(?<=\.)\s+/).map(s => s.trim()).filter(Boolean); const out = [];
+  const rules = [[/lift|carry/i, 'Someone needs to carry food and deliveries', 'Alguien debe cargar la comida y las entregas'], [/stand/i, 'Help with meals while standing is limited', 'Ayuda con las comidas mientras no pueda estar de pie'], [/follow-?up|appointment|clinic.*\d/i, 'A ride to the follow-up appointment', 'Transporte a la cita de control'], [/may not drive|no driving/i, 'Rides while they can’t drive', 'Transporte mientras no pueda manejar'], [/language|spanish|español/i, 'Instructions in their language', 'Instrucciones en su idioma'], [/walker|cane|wheelchair/i, 'Make room at home for the walker', 'Hacer espacio en casa para la andadera']];
+  for (const [re, en, es] of rules) { const src = lines.find(l => re.test(l)); if (src && !out.some(o => o.source === src)) out.push({ id: uid('t'), text: S.lang === 'es' ? es : en, source: src, on: true }); }
+  return out;
+}
+
+/* ===== AI: find gaps ===== */
+function factsForAI() {
+  const d = S.draft;
+  return { person: d.name, caregiver: d.you, relation: d.rel, discharge: d.date + ' ' + (d.time || ''), town: d.city, prefers: d.plang,
+    answers: { aloneAtHome: d.alone, canCarryGroceries: d.carry, canStandToCook: d.cook, canDrive: d.drive, fridgeRoom: d.fridge, caregiverSpendLimitUSD: d.limit },
+    fromPaper: d.tasks.filter(x => x.on).map(x => x.text), alreadyArranged: d.arranged, caregiverAvailability: d.youWhen,
+    helpers: d.helpers.map(h => ({ id: h.id, name: h.name, who: h.rel, free: h.when })),
+    localResources: RESOURCES.map(r => ({ id: r.id, kind: r.kind, name: r.name, about: r.en })) };
+}
+async function aiFindGaps() {
+  if (!SAMPLE) throw { code: 'unavailable' };
+  const lang = S.lang === 'es' ? 'Spanish' : 'English';
+  const prompt = `You are the planning step of Homeward, which helps a family caregiver cover practical, NON-CLINICAL needs in the first 72 hours after a hospital discharge (day 1 = discharge day, then days 2 and 3).
+Never give medical advice; never choose equipment, diet or medicine; never judge whether discharge is safe. Use only the facts below.
+A "gap" is something needed in the 72 hours that nothing already arranged and nobody available clearly covers AT THAT TIME. Look especially for dependencies: help that starts later leaves earlier hours uncovered; a delivery needs someone home who can carry it in and store it; a ride needs someone free with a car; a pantry needs someone to pick food up; a person who cannot stand needs meals that need no cooking.
+Reply with only JSON:
+{"covered":[{"title":"what is already handled","by":"who or what"}],
+ "gaps":[{"title":"short task, max 6 words","day":1,"when":"e.g. by 6 pm","why":"one sentence, max 22 words, naming the concrete reason from the facts","helperIds":["ids of helpers whose stated free time fits"],"resourceIds":["ids from localResources that could help"],"selfFits":true}]}
+At most 5 gaps, most urgent first. Only ids that appear in the facts. Write titles and sentences in ${lang}, plain words, about 6th-grade reading level.
+FACTS:
+${JSON.stringify(factsForAI())}`;
+  const out = await SAMPLE.json(prompt, { modelTier: 'default' });
+  if (!out || !Array.isArray(out.gaps)) throw { code: 'invalid_json' };
+  return { covered: Array.isArray(out.covered) ? out.covered.slice(0, 6) : [], gaps: out.gaps.slice(0, 5).map(g => ({ id: uid('g'), title: String(g.title || ''), day: Math.min(3, Math.max(1, Number(g.day) || 1)) - 1, when: String(g.when || ''), why: String(g.why || ''),
+    helperIds: (g.helperIds || []).filter(id => S.draft.helpers.some(h => h.id === id)), resourceIds: (g.resourceIds || []).filter(id => RESOURCES.some(r => r.id === id)), selfFits: g.selfFits !== false, handled: false })) };
+}
+function rulesFindGaps() {
+  const d = S.draft, es = S.lang === 'es', g = [];
+  const arr = d.arranged.join(' ').toLowerCase();
+  const mealsLater = /meal|comida/.test(arr) && /tomorrow|mañana/.test(arr);
+  const hasMeals = /meal|comida/.test(arr);
+  if (d.cook !== 'yes' && (!hasMeals || mealsLater)) g.push({ title: es ? 'Cena de hoy' : 'Dinner tonight', day: 0, when: es ? 'antes de las 6 pm' : 'by 6 pm', why: mealsLater ? (es ? 'Las comidas empiezan mañana, así que hoy en la noche no está cubierto.' : 'The meals start tomorrow, so tonight is not covered yet.') : (es ? `${d.name} no puede cocinar todavía y no hay comidas organizadas.` : `${d.name} can’t cook yet and no meals are arranged.`), resourceIds: ['mow', 'justfood'] });
+  if (d.carry !== 'yes' && hasMeals) g.push({ title: es ? 'Meter la entrega a la casa' : 'Bring the delivery inside', day: 1, when: es ? 'en la ventana de entrega' : 'during the delivery window', why: es ? `${d.name} no puede cargar la caja y alguien debe guardar las comidas en el refri.` : `${d.name} can’t carry the box, and someone needs to put the meals in the fridge.`, resourceIds: [] });
+  if (d.carry !== 'yes' && !hasMeals) g.push({ title: es ? 'Traer comida a la casa' : 'Get groceries home', day: 1, when: es ? 'mañana' : 'tomorrow', why: es ? `${d.name} no puede cargar bolsas; alguien debe traer la comida.` : `${d.name} can’t carry bags, so someone needs to bring food home.`, resourceIds: ['justfood', 'mow'] });
+  if (d.drive !== 'yes' && !/drive|ride|maneja|lleva/.test(arr)) g.push({ title: es ? 'Transporte a la cita' : 'Ride to the follow-up', day: 2, when: es ? 'reservar ya' : 'book now', why: es ? `${d.name} no puede manejar y nadie tiene el viaje asignado.` : `${d.name} can’t drive, and no one has the ride yet.`, resourceIds: ['seniorwheels', 'independence', 'tlift'] });
+  if (d.alone === 'yes') g.push({ title: es ? 'Visita de la primera noche' : 'First-night check-in', day: 0, when: es ? 'esta noche' : 'tonight', why: es ? `${d.name} va a estar sola en casa la primera noche.` : `${d.name} will be home alone the first night.`, resourceIds: ['adrc'] });
+  return { covered: d.arranged.map(a => ({ title: a, by: '' })), gaps: g.slice(0, 5).map(x => ({ id: uid('g'), helperIds: d.helpers.map(h => h.id), selfFits: true, handled: false, ...x })) };
+}
+
+/* ===== Options per gap ===== */
+function optionsFor(gap) {
+  const d = S.plan || S.draft, o = [];
+  const helpers = d.helpers.filter(h => gap.helperIds.includes(h.id)).concat(d.helpers.filter(h => !gap.helperIds.includes(h.id)));
+  helpers.forEach(h => o.push({ key: 'h:' + h.id, type: 'helper', helperId: h.id, title: t('optAsk', { name: esc(h.name) }), fit: t('optAskFit', { name: esc(h.name), when: esc(h.when || '') }), price: 0 }));
+  gap.resourceIds.forEach(rid => { const r = RESOURCES.find(x => x.id === rid); if (r) o.push({ key: 'r:' + rid, type: 'resource', resourceId: rid, title: t('optCall', { name: esc(r.name) }), fit: esc(r[S.lang] || r.en), cost: r.cost[S.lang] || r.cost.en, price: 0 }); });
+  if (d.youWhen) o.push({ key: 'self', type: 'self', title: t('optSelf'), fit: t('optSelfFit', { when: esc(d.youWhen) }), price: 0 });
+  o.push({ key: 'paid', type: 'paid', title: t('optPaid'), fit: t('optPaidFit'), price: 0 });
+  return o;
+}
+
+/* ===== Payment ===== */
+function payRows() {
+  const plan = S.plan; let budget = S.useBudget ? BUDGET : 0; let you = 0, used = 0;
+  const rows = S.gaps.filter(g => !g.handled && g.choice).map(g => {
+    const c = g.choice; let payer, why, price = 0;
+    if (c.type === 'helper') { const h = plan.helpers.find(x => x.id === c.helperId); payer = t('payerFamily', { name: esc(h ? h.name : '') }); why = t('payerFamilyWhy'); }
+    else if (c.type === 'self') { payer = t('payerSelf'); why = t('payerSelfWhy'); }
+    else if (c.type === 'resource') { const r = RESOURCES.find(x => x.id === c.resourceId); payer = t('payerRes'); why = esc(r.cost[S.lang] || r.cost.en) + ' ' + t('payerResWhy'); }
+    else { price = Math.max(0, Number(g.quote) || 0); const cov = Math.min(price, budget); budget -= cov; used += cov; you += price - cov;
+      payer = cov === price && price > 0 ? t('payerBudget') : cov > 0 ? t('payerMix', { a: money(cov), b: money(price - cov) }) : t('payerYou');
+      why = cov > 0 ? t('payerBudgetWhy') : t('payerYouWhy'); }
+    return { g, payer, why, price };
+  });
+  return { rows, you, used };
+}
+
+/* ===== Header ===== */
+const STEP_OF = { about: 1, paper: 1, help: 1, building: 1, gaps: 1, choose: 2, pay: 3, plan: 4 };
+function renderTop() {
+  const app = !!STEP_OF[S.view] || S.view === 'helper';
+  const top = document.getElementById('top'); top.className = 'top' + (app ? ' app' : '');
+  const n = STEP_OF[S.view]; const names = ['', t('stepNeed'), t('stepOffer'), t('stepPay'), t('stepDone')];
+  top.innerHTML = `<div class="top-in">
+      <button class="brand" data-a="home" aria-label="Homeward home">${MARK}<span>Homeward</span></button>
+      <div class="spacer"></div>
+      ${!app ? `<nav class="navlinks" aria-label="Site"><button data-a="jump" data-v="how">${t('navHow')}</button><button data-a="jump" data-v="families">${t('navFamilies')}</button><button data-a="jump" data-v="hospitals">${t('navHospitals')}</button><button data-a="go" data-v="resources">${t('navResources')}</button></nav>` : ''}
+      <div class="lang" role="group" aria-label="Language / Idioma"><button data-a="lang" data-v="en" aria-pressed="${S.lang === 'en'}">EN</button><button data-a="lang" data-v="es" aria-pressed="${S.lang === 'es'}">ES</button></div>
+    </div>
+    ${n ? `<div class="steps" aria-hidden="true">${[1, 2, 3, 4].map(i => `<span class="${i <= n ? 'on' : ''}"></span>`).join('')}</div><p class="stepname">${t('stepOf', { n })} · ${names[n]}</p>` : ''}`;
+}
+
+/* ===== Website ===== */
+function vHome() {
+  const has = S.savedPid;
+  const preview = !window.claude ? `<p class="note">${S.lang === 'es' ? 'Versión pública de prueba: planea con reglas integradas. La versión completa agrega IA que lee el papel del alta y enlaces en vivo para ayudantes.' : 'Public preview: plans with built-in rules. The full version adds AI that reads the discharge paper and live helper links.'}</p>` : '';
+  return `<div class="site">${preview}
+  <section class="hero">
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <p class="eyebrow">${t('heroEye')}</p>
+      <h1>${t('heroH')}</h1>
+      <p class="lead">${t('heroP')}</p>
+      <div class="ctas"><button class="btn primary" data-a="startReal">${t('start')}</button>${has ? `<button class="btn" data-a="resume">${t('cont')}</button>` : `<button class="btn" data-a="startSample">${t('tryIt')}</button>`}</div>
+      <p class="small muted">${t('heroNote')}</p>
+    </div>
+    <div class="phone" aria-hidden="true">
+      <p class="meta">${t('dayLabel', { n: 1 })} · ${t('today')}</p>
+      <div class="mini"><h3>${S.lang === 'es' ? 'Cena de hoy' : 'Dinner tonight'}</h3><p class="meta">${S.lang === 'es' ? 'Entrega 5:30 pm · llegó y la usó' : 'Delivered 5:30 pm · arrived and used'}</p><div>${chip('done')}</div></div>
+      <div class="mini"><h3>${S.lang === 'es' ? 'Meter la entrega a la casa' : 'Bring the delivery inside'}</h3><p class="meta">${S.lang === 'es' ? 'Mañana 2 a 4 pm · Marco dijo que sí' : 'Tomorrow 2 to 4 pm · Marco said yes'}</p><div>${chip('accepted')}</div></div>
+      <div class="mini"><h3>${S.lang === 'es' ? 'Transporte a la cita' : 'Ride to the follow-up'}</h3><p class="meta">${S.lang === 'es' ? 'Jueves 10:30 am · esperando a Senior Wheels' : 'Thursday 10:30 am · waiting on Senior Wheels'}</p><div>${chip('waiting')}</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <p class="eyebrow">${t('navHow')}</p>
+    <h2>${t('howH')}</h2>
+    <div class="cols">${[1, 2, 3, 4].map(i => `<div class="step"><span class="n">${i}</span><h3>${t('h' + i + 't')}</h3><p class="muted">${t('h' + i + 'p')}</p></div>`).join('')}</div>
+  </section>
+
+  <section class="band">
+    <div style="display:flex;flex-direction:column;gap:16px"><h2>${t('bandH')}</h2><p>${t('bandP')}</p></div>
+    <div class="ladder" aria-label="Status steps">${['needs', 'waiting', 'accepted', 'done'].map(s => chip(s)).join('')}</div>
+  </section>
+
+  <section class="split">
+    <div class="panel" id="families"><h2>${t('famH')}</h2><ul>${t('famL').map(x => `<li>${x}</li>`).join('')}</ul><div><button class="btn primary" data-a="startReal">${t('start')}</button></div></div>
+    <div class="panel" id="hospitals"><h2>${t('hosH')}</h2><ul>${t('hosL').map(x => `<li>${x}</li>`).join('')}</ul><p class="small muted">${t('hosNote')}</p></div>
+  </section>
+
+  <section class="section">
+    <h2>${t('ageH')}</h2>
+    <p class="muted" style="max-width:40em">${t('ageP')}</p>
+    <div class="cols">${RESOURCES.slice(0, 4).map(r => `<div class="step"><h3>${esc(r.name)}</h3><p class="small muted">${esc(r[S.lang] || r.en)}</p></div>`).join('')}</div>
+    <div><button class="btn" data-a="go" data-v="resources">${t('navResources')}</button></div>
+  </section>
+
+  <section class="cta-end"><h2>${t('endH')}</h2><p class="muted">${t('endP')}</p><div class="actions" style="justify-content:center"><button class="btn primary" data-a="startReal">${t('start')}</button><button class="btn" data-a="startSample">${t('tryIt')}</button></div></section>
+  <footer>${t('footer')}</footer>
+  </div>`;
+}
+function vResources() {
+  return `<div class="wrap"><section class="screen"><h1>${t('resH')}</h1><p class="muted">${t('resP')}</p>${RESOURCES.map(resCard).join('')}
+    <button class="btn" data-a="home">${t('back')}</button></section><footer>${t('footer')}</footer></div>`;
+}
+function resCard(r) { return `<div class="res"><strong>${esc(r.name)}</strong><span class="small">${esc(r[S.lang] || r.en)}</span><span class="small"><strong>${esc(r.cost[S.lang] || r.cost.en)}</strong></span>${r.phone ? `<span>${t('call')}: <span class="phone">${esc(r.phone)}</span></span>` : ''}<span class="small muted">${t('checked')} · <a href="${r.src}" target="_blank" rel="noopener">${t('source')}</a></span></div>`; }
+
+/* ===== App screens ===== */
+function seg(name, val, opts) { return `<div class="seg">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" id="${name}-${v}" data-f="${name}" value="${v}" ${val === v ? 'checked' : ''}> ${l}</label>`).join('')}</div>`; }
+function bottom(back, nextAction, nextLabel, disabled) { return `<div class="bottom"><div class="in">${back ? `<button class="btn" data-a="go" data-v="${back}">${t('back')}</button>` : ''}<button class="btn primary" data-a="${nextAction}" ${disabled ? 'disabled' : ''}>${nextLabel}</button></div></div>`; }
+function sampleBanner() { return S.draft.sample ? `<p class="note"><span class="tag">${t('sampleTag')}</span> ${t('sampleBanner')}</p>` : ''; }
+
+function vAbout() {
+  const d = S.draft, yn = [['yes', t('yes')], ['no', t('no')]], yns = [['yes', t('yes')], ['no', t('no')], ['unsure', t('notSure')]];
+  return `<div class="wrap"><section class="screen">
+    ${sampleBanner()}
+    <h1>${t('aboutH')}</h1><p class="muted">${t('aboutP')}</p>
+    <div class="card">
+      <div class="row2"><label class="field">${t('pName')}<input type="text" id="f-name" data-f="name" value="${esc(d.name)}" autocomplete="off"></label>
+      <label class="field">${t('pYou')}<input type="text" id="f-you" data-f="you" value="${esc(d.you)}" autocomplete="off"></label></div>
+      <label class="field">${t('pRel')}<input type="text" id="f-rel" data-f="rel" value="${esc(d.rel)}" placeholder="${t('pRelPh')}"></label>
+      <div class="row2"><label class="field">${t('pDate')}<input type="date" id="f-date" data-f="date" value="${esc(d.date)}"></label>
+      <label class="field">${t('pTime')}<input type="time" id="f-time" data-f="time" value="${esc(d.time)}"></label></div>
+      <div class="row2"><label class="field">${t('pCity')}<input type="text" id="f-city" data-f="city" value="${esc(d.city)}"></label>
+      <label class="field">${t('pLang')}<select id="f-plang" data-f="plang">${['English', 'Spanish', 'Other'].map(v => `<option ${d.plang === v ? 'selected' : ''} value="${v}">${S.lang === 'es' ? { English: 'Inglés', Spanish: 'Español', Other: 'Otro' }[v] : v}</option>`).join('')}</select></label></div>
+    </div>
+    <div class="card">
+      <fieldset><legend>${t('qAlone')}</legend>${seg('alone', d.alone, yns)}</fieldset>
+      <fieldset><legend>${t('qCarry')}</legend>${seg('carry', d.carry, yns)}</fieldset>
+      <fieldset><legend>${t('qCook')}</legend>${seg('cook', d.cook, yns)}</fieldset>
+      <fieldset><legend>${t('qDrive')}</legend>${seg('drive', d.drive, yn)}</fieldset>
+      <fieldset><legend>${t('qFridge')}</legend>${seg('fridge', d.fridge, yns)}</fieldset>
+      <label class="field">${t('qBudget')}<select id="f-limit" data-f="limit">${['0', '25', '50', '100', '200'].map(v => `<option value="${v}" ${d.limit === v ? 'selected' : ''}>$${v}</option>`).join('')}</select></label>
+    </div>
+    <p class="small muted">${t('privacy')}</p>
+    ${bottom('', 'toPaper', t('next'), false)}
+  </section></div>`;
+}
+
+function vPaper() {
+  const d = S.draft;
+  return `<div class="wrap"><section class="screen">
+    ${sampleBanner()}
+    <h1>${t('paperH')}</h1><p class="muted">${t('paperP')}</p>
+    <div class="card">
+      <label class="field">${t('photo')}<input type="file" id="f-photo" accept="image/*" data-a="photo"></label>
+      ${S.photoName ? `<p class="small muted">${esc(S.photoName)}</p>` : ''}
+      <label class="field">${t('paste')}<textarea id="f-paper" data-f="paperText">${esc(d.paperText)}</textarea></label>
+      <div class="actions"><button class="btn primary" data-a="readPaper" ${S.busy ? 'disabled' : ''}>${S.busy ? t('reading') : t('read')}</button><button class="btn quiet" data-a="skipPaper">${t('skip')}</button></div>
+      ${S.paperErr ? `<p class="note">${S.paperErr}</p>` : ''}
+    </div>
+    ${d.tasks.length ? `<div class="card"><h2>${t('foundH')}</h2><p class="meta">${t('foundP')}</p>
+      ${d.tasks.map(x => `<label class="check"><input type="checkbox" id="tk-${x.id}" data-a="toggleTask" data-v="${x.id}" ${x.on ? 'checked' : ''}><span><strong>${esc(x.text)}</strong>${x.source ? `<br><span class="quote">“${esc(x.source)}”</span>` : ''}</span></label>`).join('')}
+      <div class="row2" style="align-items:end"><label class="field">${t('addTask')}<input type="text" id="f-newtask"></label><button class="btn" data-a="addTask">${t('add')}</button></div>
+    </div>` : ''}
+    <p class="small muted">${t('medical')}</p>
+    ${bottom('about', 'toHelp', t('next'), false)}
+  </section></div>`;
+}
+
+function vHelp() {
+  const d = S.draft;
+  return `<div class="wrap"><section class="screen">
+    ${sampleBanner()}
+    <h1>${t('helpH')}</h1><p class="muted">${t('helpP')}</p>
+    <div class="card"><h2>${t('arrH')}</h2>
+      <div class="list">${d.arranged.length ? d.arranged.map((a, i) => `<div class="item"><div>${esc(a)}</div><button class="btn quiet small" data-a="delArr" data-v="${i}" aria-label="Remove">✕</button></div>`).join('') : `<p class="meta">${t('arrNone')}</p>`}</div>
+      <div class="row2" style="align-items:end"><label class="field"><span class="hint">${t('arrPh')}</span><input type="text" id="f-arr"></label><button class="btn" data-a="addArr">${t('add')}</button></div>
+    </div>
+    <div class="card"><h2>${t('helpersH')}</h2><p class="meta">${t('helpersP')}</p>
+      <label class="field">${t('youWhen')}<input type="text" id="f-youWhen" data-f="youWhen" value="${esc(d.youWhen)}" placeholder="${t('youWhenPh')}"></label>
+      <div class="list">${d.helpers.map((h, i) => `<div class="item"><div><strong>${esc(h.name)}</strong> · ${esc(h.rel)}<br><span class="meta">${esc(h.when)}${h.phone ? ' · ' + esc(h.phone) : ''}</span></div><button class="btn quiet small" data-a="delHelper" data-v="${i}" aria-label="Remove">✕</button></div>`).join('')}</div>
+      <div class="row2"><label class="field">${t('hName')}<input type="text" id="h-name"></label><label class="field">${t('hRel')}<input type="text" id="h-rel"></label></div>
+      <div class="row2"><label class="field">${t('hWhen')}<input type="text" id="h-when"></label><label class="field">${t('hPhone')}<input type="tel" id="h-phone"></label></div>
+      <button class="btn" data-a="addHelper">${t('addHelper')}</button>
+    </div>
+    ${bottom('paper', 'buildPlan', t('build'), false)}
+  </section></div>`;
+}
+
+function vBuilding() { return `<div class="wrap"><section class="screen" style="align-items:center;text-align:center;padding-top:80px"><div class="spinner" role="img" aria-label="${t('building')}"></div><h1>${t('building')}</h1><p class="muted">${t('buildingP')}</p></section></div>`; }
+
+function vGaps() {
+  const open = S.gaps.filter(g => !g.handled), done = S.gaps.filter(g => g.handled);
+  const n = open.length; const word = [t('gaps1'), t('gaps2'), t('gaps3')][n - 1] || t('gapsN', { n });
+  const days = [...new Set(open.map(g => g.day))].sort();
+  return `<div class="wrap"><section class="screen">
+    ${sampleBanner()}
+    <h1>${n ? t('gapsH', { n: word }) : t('gapsH0')}</h1>
+    ${S.aiUsed === false ? `<p class="note">${S.aiErr ? t('errAI') : t('aiOff')}</p>` : ''}
+    ${(S.covered || []).length ? `<div class="sage"><strong>${t('inPlace')}</strong>${S.covered.map(c => `<span>${esc(c.title)}${c.by ? ' · ' + esc(c.by) : ''}</span>`).join('')}</div>` : ''}
+    ${days.map(dn => `<div class="day"><p class="dayhead">${dayHead(dn)}</p>${open.filter(g => g.day === dn).map(gapCard).join('')}</div>`).join('')}
+    ${done.length ? `<div class="day"><p class="dayhead">${t('handledH')}</p>${done.map(g => `<div class="card"><h3>${esc(g.title)}</h3><div><button class="btn quiet" data-a="unhandle" data-v="${g.id}">${t('undo')}</button></div></div>`).join('')}</div>` : ''}
+    ${bottom('help', 'toChoose', t('coverAll'), !n)}
+  </section></div>`;
+}
+function gapCard(g) {
+  if (S.editing === g.id) return `<div class="card"><label class="field">${t('edit')}<input type="text" id="e-title" value="${esc(g.title)}"></label><label class="field"><input type="text" id="e-when" value="${esc(g.when)}"></label><textarea id="e-why">${esc(g.why)}</textarea><div class="actions"><button class="btn primary" data-a="saveEdit" data-v="${g.id}">${t('save')}</button><button class="btn quiet" data-a="cancelEdit">${t('cancel')}</button></div></div>`;
+  return `<div class="card"><h3>${esc(g.title)}</h3><p class="meta">${esc(g.when)} · ${t('noOne')}</p><div>${chip('needs')}</div><p class="why">${esc(g.why)}</p>
+    <div class="actions"><button class="btn primary" data-a="toChoose">${t('coverThis')}</button><button class="btn" data-a="handle" data-v="${g.id}">${t('handled')}</button><button class="btn quiet" data-a="edit" data-v="${g.id}">${t('edit')}</button></div></div>`;
+}
+
+function vChoose() {
+  const open = S.gaps.filter(g => !g.handled);
+  const ok = open.every(g => g.choice && (g.choice.type !== 'paid' || (g.quote !== '' && g.quote != null && Number(g.quote) >= 0)));
+  return `<div class="wrap"><section class="screen">
+    <h1>${t('chooseH')}</h1><p class="muted">${t('chooseP')}</p>
+    ${open.map(g => `<fieldset class="card"><legend><h3>${esc(g.title)}</h3></legend><p class="meta">${dayHead(g.day)} · ${esc(g.when)}</p>
+      ${optionsFor(g).map(o => `<label class="opt"><input type="radio" name="o-${g.id}" id="o-${g.id}-${o.key.replace(/[^a-z0-9]/gi, '')}" data-a="choose" data-g="${g.id}" data-v="${o.key}" ${g.choice && g.choice.key === o.key ? 'checked' : ''}>
+        <span class="opt-body"><span class="t">${o.title}</span><span class="small">${o.fit}</span>${o.cost ? `<span class="small"><strong>${esc(o.cost)}</strong></span>` : ''}
+        ${o.type === 'resource' ? (() => { const r = RESOURCES.find(x => x.id === o.resourceId); return r.phone ? `<span class="small">${t('call')}: <span class="phone">${esc(r.phone)}</span> · <a href="${r.src}" target="_blank" rel="noopener">${t('source')}</a></span>` : `<span class="small"><a href="${r.src}" target="_blank" rel="noopener">${t('source')}</a></span>`; })() : ''}
+        ${o.type === 'paid' && g.choice && g.choice.key === 'paid' ? `<span class="field small">${t('quote')}<input type="number" min="0" step="1" id="q-${g.id}" aria-label="${t('quote')}" data-a="quote" data-g="${g.id}" value="${esc(g.quote ?? '')}"></span>` : ''}
+        </span></label>`).join('')}
+    </fieldset>`).join('')}
+    ${bottom('gaps', 'toPay', t('seePay'), !ok)}
+  </section></div>`;
+}
+
+function vPay() {
+  const { rows, you } = payRows(); const lim = Number(S.plan.limit || 0);
+  return `<div class="wrap"><section class="screen">
+    <h1>${t('payH')}</h1>
+    <div class="card">${rows.map(r => `<div class="payrow"><div><strong>${esc(r.g.title)}</strong><p class="meta">${r.g.choice.title} · ${r.payer}</p><p class="small muted">${r.why}</p></div><div class="amt">${money(r.price)}</div></div>`).join('')}
+      <div class="payrow"><div><strong>${t('coord')}</strong><p class="small muted">${t('coordP')}</p></div><div class="amt">${t('zeroYou')}</div></div></div>
+    <div class="total"><span>${t('youPay')}</span><span>${money(you)}</span></div>
+    ${you > lim ? `<p class="note">${t('overLimit', { lim: money(lim) })}</p>` : ''}
+    <label class="opt"><input type="checkbox" id="f-budget" data-a="budget" ${S.useBudget ? 'checked' : ''}><span class="opt-body"><span class="t">${t('budgetToggle', { b: BUDGET })}</span></span></label>
+    <p class="small muted"><span class="tag">Sim</span> ${t('simNote')}</p>
+    ${bottom('choose', 'confirmPlan', you > 0 ? t('payNow', { x: money(you) }) : t('confirm'), you > lim)}
+  </section></div>`;
+}
+
+function vPlan() {
+  const p = S.plan, tot = S.tasks.length, cov = S.tasks.filter(x => x.status === 'accepted' || x.status === 'done').length, dn = S.tasks.filter(x => x.status === 'done').length;
+  const days = [...new Set(S.tasks.map(x => x.day))].sort();
+  const helperTasks = S.tasks.filter(x => x.ownerType === 'helper');
+  const link = SHARE_URL + '#h-' + S.pid;
+  const msg = (S.lang === 'es' ? `Hola, ¿me puedes ayudar con ${p.name} esta semana? Abre esto para ver qué necesito y dime sí o no: ` : `Hi, can you help with ${p.name} this week? Open this to see what I need and say yes or no: `) + link;
+  return `<div class="wrap"><section class="screen">
+    <h1>${t('planH', { name: esc(p.name) })}</h1>
+    <div style="display:flex;flex-direction:column;gap:8px"><p><strong>${t('coveredOf', { c: cov, t: tot })}</strong> · ${t('completed', { d: dn })}</p><div class="bar"><i style="width:${tot ? cov / tot * 100 : 0}%"></i></div><p class="small muted">${t('coveredExp', { name: esc(p.name) })}</p></div>
+    ${helperTasks.length ? `<div class="card"><h2>${t('shareH')}</h2><p class="meta">${t('shareP')}</p>
+      ${DB ? `<p class="linkbox" id="linkbox">${esc(link)}</p><div class="actions"><button class="btn small" data-a="copy" data-v="link">${t('copy')}</button><button class="btn small" data-a="copy" data-v="msg">${t('msgCopy')}</button></div><p class="small muted">${t('shareNote')}</p>` : `<p class="note">${t('noDb')}</p>`}
+      <span id="msgtext" hidden>${esc(msg)}</span></div>` : ''}
+    ${tot ? days.map(n => `<div class="day"><p class="dayhead">${dayHead(n)}</p>${S.tasks.filter(x => x.day === n).map(taskCard).join('')}</div>`).join('') : `<p>${t('noTasks')}</p>`}
+    <p class="small muted">${t('medical')}</p>
+    <div class="actions"><button class="btn quiet" data-a="newPlan">${t('newPlan')}</button><button class="btn quiet" data-a="go" data-v="resources">${t('navResources')}</button></div>
+  </section></div>`;
+}
+function taskCard(x) {
+  const name = esc(S.plan.name); let extra = '';
+  if (x.check === 'arrived') extra = `<div class="event"><p><strong>${t('arrivedQ')}</strong></p><div class="actions"><button class="btn primary" data-a="arrived" data-v="${x.id}" data-x="yes">${t('yesArrived')}</button><button class="btn" data-a="arrived" data-v="${x.id}" data-x="no">${t('noArrived')}</button></div></div>`;
+  else if (x.check === 'usable') extra = `<div class="event"><p><strong>${t('usableQ', { name })}</strong></p><div class="actions"><button class="btn primary" data-a="usable" data-v="${x.id}" data-x="yes">${t('yesUse')}</button><button class="btn" data-a="usable" data-v="${x.id}" data-x="no">${t('noUse')}</button></div></div>`;
+  else if (x.status === 'helpme') extra = `<div class="event"><p><strong>${t('nextH')}</strong></p>${x.ideas ? `<p class="small">${esc(x.ideas)}</p>` : ''}<div class="actions">${x.ownerType === 'helper' && !x.declined ? `<button class="btn primary" data-a="askAgain" data-v="${x.id}">${t('askAgain', { name: esc(x.ownerName) })}</button>` : ''}<button class="btn" data-a="reChoose" data-v="${x.id}">${t('tryOther')}</button>${SAMPLE ? `<button class="btn quiet" data-a="ideas" data-v="${x.id}">${x.ideasBusy ? t('ideasLoading') : t('ideas')}</button>` : ''}</div></div>`;
+  else if (x.status === 'waiting') extra = `<div class="actions"><button class="btn small" data-a="markYes" data-v="${x.id}">${x.ownerType === 'resource' ? t('iCalled') : t('saidYes')}</button></div>`;
+  else if (x.status === 'accepted') extra = `<div class="actions"><button class="btn small" data-a="checkIt" data-v="${x.id}">${t('checkIt')}</button></div>`;
+  const res = x.ownerType === 'resource' ? RESOURCES.find(r => r.id === x.resourceId) : null;
+  return `<div class="card"><h3>${esc(x.title)}</h3><p class="meta">${esc(x.when)} · ${esc(x.ownerLabel)}</p><div>${chip(x.status)}</div>
+    ${res && res.phone && x.status !== 'done' ? `<p class="small">${t('call')}: <span class="phone">${esc(res.phone)}</span></p>` : ''}
+    ${x.note ? `<p class="why">${esc(x.note)}</p>` : ''}${extra}
+    ${x.history && x.history.length ? `<details><summary>${t('history')}</summary><ol class="history">${x.history.map(h => `<li>${esc(h.t)} · ${esc(h.m)}</li>`).join('')}</ol></details>` : ''}</div>`;
+}
+
+/* ===== Helper view (opened from a link) ===== */
+function vHelper() {
+  if (S.helperState === 'loading') return `<div class="wrap"><section class="screen"><p>${t('loading')}</p></section></div>`;
+  if (S.helperState === 'missing' || !S.helperPlan) return `<div class="wrap"><section class="screen"><h1>${t('hlpNotFound')}</h1><p class="muted">${t('hlpAbout')}</p></section></div>`;
+  const p = S.helperPlan;
+  if (!S.helperMe) return `<div class="wrap"><section class="screen"><p class="muted">${t('hlpAbout')}</p><h1>${t('hlpWho')}</h1>
+    <div class="list">${p.helpers.map(h => `<button class="btn block" data-a="iAm" data-v="${h.id}">${esc(h.name)}</button>`).join('')}</div></section></div>`;
+  const me = p.helpers.find(h => h.id === S.helperMe); const mine = S.helperTasks.filter(x => x.helperId === S.helperMe && x.ownerType === 'helper');
+  return `<div class="wrap"><section class="screen">
+    <h1>${t('hlpHi', { name: esc(me ? me.name : ''), cg: esc(p.you || '') })}</h1><p class="muted">${t('hlpAbout')}</p>
+    ${mine.length ? mine.map(x => `<div class="card"><h3>${esc(x.title)}</h3><p class="meta">${dayHead(x.day)} · ${esc(x.when)}</p><div>${chip(x.status)}</div><p class="why">${esc(x.why || '')}</p>
+      ${x.status === 'waiting' ? `<div class="actions"><button class="btn primary" data-a="hYes" data-v="${x.id}">${t('hlpYes')}</button><button class="btn" data-a="hNo" data-v="${x.id}">${t('hlpNo')}</button></div>` : ''}
+      ${x.status === 'accepted' ? `<button class="btn primary" data-a="hDone" data-v="${x.id}">${t('hlpDone')}</button>` : ''}</div>`).join('') : `<p>${t('hlpNone')}</p>`}
+    ${S.helperMsg ? `<p class="note">${S.helperMsg}</p>` : ''}
+  </section></div>`;
+}
+
+/* ===== Render ===== */
+function render() {
+  renderTop();
+  const V = { home: vHome, resources: vResources, about: vAbout, paper: vPaper, help: vHelp, building: vBuilding, gaps: vGaps, choose: vChoose, pay: vPay, plan: vPlan, helper: vHelper };
+  document.getElementById('app').innerHTML = (V[S.view] || vHome)();
+  try { localStorage.setItem('hw-lang', S.lang); } catch (e) {}
+}
+function go(v) { S.view = v; window.scrollTo(0, 0); render(); }
+function toast(m) { const el = document.getElementById('toast'); el.textContent = m; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true; }, 2600); }
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function hist(x, m) { x.history = x.history || []; x.history.push({ t: nowLabel(), m }); }
+
+/* ===== Actions ===== */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
+  const a = b.dataset.a, v = b.dataset.v;
+  if (['choose', 'photo', 'quote', 'budget', 'toggleTask'].includes(a)) return; // handled on change
+  const d = S.draft;
+  switch (a) {
+    case 'home': go('home'); break;
+    case 'jump': { if (S.view !== 'home') go('home'); const el = document.getElementById(v); if (el) el.scrollIntoView({ behavior: 'smooth' }); break; }
+    case 'lang': S.lang = v; render(); break;
+    case 'go': go(v); break;
+    case 'startReal': S.draft = blankDraft(); S.gaps = []; S.photo = null; S.photoName = ''; go('about'); break;
+    case 'startSample': S.draft = sampleDraft(); S.gaps = []; S.photo = null; S.photoName = ''; go('about'); break;
+    case 'resume': resume(); break;
+    case 'toPaper': go('paper'); break;
+    case 'readPaper': await readPaper(); break;
+    case 'skipPaper': go('help'); break;
+    case 'addTask': { const s = val('f-newtask'); if (s) { d.tasks.push({ id: uid('t'), text: s, source: '', on: true }); render(); } break; }
+    case 'toHelp': go('help'); break;
+    case 'addArr': { const s = val('f-arr'); if (s) { d.arranged.push(s); render(); } break; }
+    case 'delArr': d.arranged.splice(Number(v), 1); render(); break;
+    case 'addHelper': { const n = val('h-name'); if (!n) { document.getElementById('h-name').focus(); break; } d.helpers.push({ id: uid('h'), name: n, rel: val('h-rel'), when: val('h-when'), phone: val('h-phone') }); render(); break; }
+    case 'delHelper': d.helpers.splice(Number(v), 1); render(); break;
+    case 'buildPlan': await buildPlan(); break;
+    case 'handle': S.gaps.find(g => g.id === v).handled = true; render(); break;
+    case 'unhandle': S.gaps.find(g => g.id === v).handled = false; render(); break;
+    case 'edit': S.editing = v; render(); break;
+    case 'cancelEdit': S.editing = null; render(); break;
+    case 'saveEdit': { const g = S.gaps.find(g => g.id === v); g.title = val('e-title') || g.title; g.when = val('e-when'); g.why = document.getElementById('e-why').value.trim(); S.editing = null; render(); break; }
+    case 'toChoose': S.editing = null; go('choose'); break;
+    case 'toPay': go('pay'); break;
+    case 'confirmPlan': await confirmPlan(); break;
+    case 'copy': { const text = v === 'link' ? SHARE_URL + '#h-' + S.pid : document.getElementById('msgtext').textContent; try { await navigator.clipboard.writeText(text); toast(t('copied')); } catch (err) { const box = document.getElementById('linkbox'); if (box) { const r = document.createRange(); r.selectNodeContents(box); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } } break; }
+    case 'markYes': { const x = task(v); x.status = 'accepted'; hist(x, x.ownerType === 'resource' ? (S.lang === 'es' ? 'Usted llamó; dijeron que sí' : 'You called; they said yes') : (S.lang === 'es' ? `${x.ownerName} le dijo que sí` : `${x.ownerName} told you yes`)); await saveTask(x); render(); break; }
+    case 'checkIt': { const x = task(v); x.check = 'arrived'; render(); break; }
+    case 'arrived': { const x = task(v); if (b.dataset.x === 'yes') { x.check = 'usable'; hist(x, S.lang === 'es' ? 'Llegó' : 'Arrived'); } else { x.check = null; x.status = 'helpme'; x.note = t('reopenNote'); hist(x, S.lang === 'es' ? 'No llegó; sigue abierto' : 'Did not arrive; kept open'); } await saveTask(x); render(); break; }
+    case 'usable': { const x = task(v); x.check = null; if (b.dataset.x === 'yes') { x.status = 'done'; x.note = ''; hist(x, S.lang === 'es' ? 'Completada: llegó y la pudo usar' : 'Completed: arrived and usable'); toast(t('status_done')); } else { x.status = 'helpme'; x.note = t('reopenNote'); hist(x, S.lang === 'es' ? 'Llegó pero no la pudo usar; se reabrió' : 'Arrived but not usable; reopened'); } await saveTask(x); render(); break; }
+    case 'askAgain': { const x = task(v); x.status = 'waiting'; x.note = ''; x.helperDone = false; hist(x, S.lang === 'es' ? `Se le pidió a ${x.ownerName} que lo arregle` : `Asked ${x.ownerName} to fix it`); await saveTask(x); render(); break; }
+    case 'reChoose': reChoose(v); break;
+    case 'ideas': await ideas(v); break;
+    case 'newPlan': S.pid = null; S.savedPid = null; if (unsubTasks) { unsubTasks(); unsubTasks = null; } try { localStorage.removeItem('hw-current'); } catch (err) {} S.draft = blankDraft(); go('about'); break;
+    case 'iAm': S.helperMe = v; render(); break;
+    case 'hYes': await helperSet(v, 'accepted', S.lang === 'es' ? 'Dijo que sí' : 'Said yes'); break;
+    case 'hNo': await helperSet(v, 'helpme', S.lang === 'es' ? 'Dijo que no puede' : 'Said they can’t', true); break;
+    case 'hDone': await helperSet(v, 'accepted', S.lang === 'es' ? 'Dice que ya está hecho' : 'Says it’s done', false, true); break;
+  }
+});
+document.addEventListener('input', e => { const f = e.target.dataset.f; if (f) S.draft[f] = e.target.value; });
+document.addEventListener('change', e => {
+  const el = e.target, a = el.dataset.a, f = el.dataset.f;
+  if (f) { S.draft[f] = el.value; return; }
+  if (a === 'photo') { S.photo = el.files && el.files[0] || null; S.photoName = S.photo ? S.photo.name : ''; render(); }
+  else if (a === 'toggleTask') { const x = S.draft.tasks.find(x => x.id === el.dataset.v); if (x) x.on = el.checked; }
+  else if (a === 'choose') { const g = S.gaps.find(g => g.id === el.dataset.g); g.choice = optionsFor(g).find(o => o.key === el.dataset.v); if (g.choice.type === 'paid' && g.quote == null) g.quote = S.draft.sample ? 35 : ''; render(); }
+  else if (a === 'quote') { const g = S.gaps.find(g => g.id === el.dataset.g); g.quote = el.value; render(); }
+  else if (a === 'budget') { S.useBudget = el.checked; render(); }
+});
+function task(id) { return S.tasks.find(x => x.id === id); }
+
+/* ===== Flows ===== */
+async function readPaper() {
+  const d = S.draft; S.paperErr = '';
+  if (!S.photo && !d.paperText.trim()) { S.paperErr = S.lang === 'es' ? 'Agregue una foto o pegue el texto, o toque “No lo tengo”.' : 'Add a photo or paste the text, or tap “I don’t have it”.'; render(); return; }
+  S.busy = true; render(); await ready;
+  try { d.tasks = await aiReadPaper(d.paperText, S.photo); S.aiUsed = true; }
+  catch (err) { if (S.photo && !d.paperText.trim()) { S.paperErr = S.lang === 'es' ? 'No pudimos leer la foto aquí. Pegue el texto, por favor.' : 'We couldn’t read the photo here. Please paste the text instead.'; } else { d.tasks = rulesReadPaper(d.paperText); S.paperErr = t('errAI'); } }
+  S.busy = false; render();
+}
+async function buildPlan() {
+  const d = S.draft;
+  if (!d.name) { go('about'); setTimeout(() => { const el = document.getElementById('f-name'); if (el) el.focus(); }, 50); return; }
+  go('building'); await ready;
+  let res; S.aiErr = false;
+  try { res = await aiFindGaps(); S.aiUsed = true; }
+  catch (err) { res = rulesFindGaps(); S.aiUsed = false; S.aiErr = !!SAMPLE; }
+  S.gaps = res.gaps; S.covered = res.covered.filter(c => c && c.title);
+  S.pid = uid('p'); S.rechoosing = false;
+  S.plan = { id: S.pid, name: d.name, you: d.you || (S.lang === 'es' ? 'su cuidador' : 'your caregiver'), rel: d.rel, date: d.date, time: d.time, city: d.city, plang: d.plang, limit: d.limit, helpers: d.helpers, youWhen: d.youWhen, sample: d.sample, lang: S.lang, createdAt: Date.now() };
+  S.gaps.forEach(g => { const o = optionsFor(g); g.choice = o.find(x => x.type === 'helper' && g.helperIds.includes(x.helperId)) || o.find(x => x.type === 'resource') || null; });
+  go('gaps');
+}
+async function confirmPlan() {
+  const p = S.plan; const { rows } = payRows();
+  const fresh = S.gaps.filter(g => !g.handled && g.choice).map(g => {
+    const c = g.choice; const row = rows.find(r => r.g.id === g.id);
+    const x = { id: g.id, title: g.title, when: g.when, day: g.day, why: g.why, ownerType: c.type, price: row ? row.price : 0, payer: row ? row.payer.replace(/<[^>]+>/g, '') : '', history: [], note: '', check: null, updatedAt: Date.now() };
+    if (c.type === 'helper') { const h = p.helpers.find(h => h.id === c.helperId); x.helperId = c.helperId; x.ownerName = h ? h.name : ''; x.ownerLabel = (S.lang === 'es' ? 'Se le pidió a ' : 'Asked ') + x.ownerName; x.status = 'waiting'; hist(x, (S.lang === 'es' ? 'Solicitud enviada a ' : 'Request sent to ') + x.ownerName); }
+    else if (c.type === 'resource') { const r = RESOURCES.find(r => r.id === c.resourceId); x.resourceId = r.id; x.ownerName = r.name; x.ownerLabel = (S.lang === 'es' ? 'Llamar: ' : 'Call: ') + r.name; x.status = 'waiting'; hist(x, S.lang === 'es' ? 'Falta llamar para confirmar' : 'Needs a call to confirm'); }
+    else if (c.type === 'self') { x.ownerName = p.you; x.ownerLabel = p.you; x.status = 'accepted'; hist(x, S.lang === 'es' ? 'Usted se encarga' : 'You’re handling it'); }
+    else { x.ownerName = S.lang === 'es' ? 'Ayuda pagada' : 'Paid help'; x.ownerLabel = `${x.ownerName} · ${money(x.price)} · ${x.payer}`; x.status = 'accepted'; hist(x, (S.lang === 'es' ? 'Pago simulado aprobado: ' : 'Simulated payment approved: ') + money(x.price)); }
+    return x;
+  });
+  S.tasks = S.rechoosing ? S.tasks.filter(o => !fresh.some(n => n.id === o.id)).concat(fresh) : fresh; S.rechoosing = false;
+  p.payment = { youPay: payRows().you, budgetUsed: payRows().used, simulated: true };
+  await savePlan(); for (const x of fresh) await saveTask(x);
+  subscribeTasks(); go('plan');
+}
+function reChoose(id) {
+  const x = task(id); const g = S.gaps.find(g => g.id === id) || { id, title: x.title, day: x.day, when: x.when, why: x.why, helperIds: [], resourceIds: [], selfFits: true };
+  if (!S.gaps.includes(g)) S.gaps.push(g);
+  g.handled = false; g.choice = null; S.gaps.forEach(o => { if (o.id !== id) o.handled = true; });
+  S.tasks = S.tasks.filter(t2 => t2.id !== id); S.rechoosing = true;
+  go('choose');
+}
+async function ideas(id) {
+  const x = task(id); if (!SAMPLE) return; x.ideasBusy = true; render();
+  const lang = S.lang === 'es' ? 'Spanish' : 'English';
+  try {
+    const r = await SAMPLE(`A family caregiver arranged practical, non-clinical help after a hospital discharge, but it did not work. Task: "${x.title}". What happened: ${x.history.map(h => h.m).join('; ')}. Helpers: ${JSON.stringify(S.plan.helpers.map(h => ({ name: h.name, free: h.when })))}. Local programs: ${JSON.stringify(RESOURCES.map(r => ({ name: r.name, phone: r.phone, about: r.en })))}.
+Suggest the 2 most practical next steps in ${lang}, at most 45 words total, plain words, no medical advice, only using the helpers and programs listed.`, { modelTier: 'quick', cache: false });
+    x.ideas = r.text;
+  } catch (err) { x.ideas = ''; }
+  x.ideasBusy = false; render();
+}
+function resume() {
+  try { const raw = localStorage.getItem('hw-plan-' + S.savedPid); if (raw) { const o = JSON.parse(raw); S.pid = S.savedPid; S.plan = o.plan; S.tasks = o.tasks || []; subscribeTasks(); go('plan'); return; } } catch (e) {}
+  go('about');
+}
+
+/* ===== Helper link mode ===== */
+async function helperSet(id, status, msg, declined, done) {
+  const x = S.helperTasks.find(x => x.id === id); if (!x) return;
+  const cg = S.helperPlan.you || '';
+  x.status = status; x.declined = !!declined; if (declined) x.note = (S.lang === 'es' ? `${x.ownerName} no puede con esta.` : `${x.ownerName} can’t do this one.`);
+  if (done) { x.check = 'arrived'; x.note = (S.lang === 'es' ? `${x.ownerName} dice que ya está. Por favor revise.` : `${x.ownerName} says it’s done. Please check.`); }
+  x.history = x.history || []; x.history.push({ t: nowLabel(), m: `${x.ownerName}: ${msg}` }); x.updatedAt = Date.now();
+  const ok = await dbWrite('plans/' + S.helperPid + '/tasks/' + x.id, x);
+  S.helperMsg = ok ? t('hlpSaved', { cg: esc(cg) }) : t('hlpFail', { cg: esc(cg) }); render();
+}
+async function startHelper(pid) {
+  S.view = 'helper'; S.helperPid = pid; S.helperState = 'loading'; render(); await ready;
+  if (!DB) { S.helperState = 'missing'; render(); return; }
+  unsubHelper.push(DB.doc('plans/' + pid).onSnapshot(s => { if (s.exists) { S.helperPlan = s.data(); S.helperState = 'ok'; let pref = null; try { pref = localStorage.getItem('hw-lang'); } catch (e) {} if (S.helperPlan.lang && !pref) S.lang = S.helperPlan.lang; } else { S.helperState = 'missing'; } render(); }, () => { S.helperState = 'missing'; render(); }));
+  unsubHelper.push(DB.collection('plans/' + pid + '/tasks').onSnapshot(s => { S.helperTasks = s.docs.map(d => structuredClone(d.data())); render(); }, () => {}));
+}
+
+/* ===== Boot ===== */
+const h = location.hash || '';
+if (/^#h-p[a-z0-9]+$/i.test(h)) startHelper(h.slice(3)); else render();
+ready.then(() => { if (S.view !== 'helper') render(); });
+</script>
+
+</body>
+</html>
